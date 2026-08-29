@@ -1,0 +1,25 @@
+# Unreal Engine build output
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+Packaged/
+
+# IDE files
+.vs/
+.idea/
+.vscode/
+*.sln
+*.pdb
+*.dll
+*.lib
+*.obj
+*.log
+*.zip
+
+# Personal AI tool settings
+.codex/
+.claude/
+.cursor/
+.agents/
+.mcp.json

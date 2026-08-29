@@ -1,0 +1,24 @@
+{
+	"FileVersion": 3,
+	"Version": 5,
+	"VersionName": "0.4.1",
+	"FriendlyName": "Item Icon Generator",
+	"Description": "Editor tools for batch-generating Texture2D item icons from static meshes.",
+	"Category": "Editor",
+	"CreatedBy": "",
+	"CreatedByURL": "",
+	"DocsURL": "",
+	"MarketplaceURL": "",
+	"SupportURL": "",
+	"EngineVersion": "5.8.0",
+	"CanContainContent": true,
+	"IsBetaVersion": true,
+	"Installed": false,
+	"Modules": [
+		{
+			"Name": "ItemIconGeneratorEditor",
+			"Type": "Editor",
+			"LoadingPhase": "Default"
+		}
+	]
+}
