@@ -2,7 +2,7 @@
 
 An editor-only Unreal Engine plugin for turning static meshes into `Texture2D` item icons. It is intended for teams that need a consistent icon-production workflow without repeatedly setting up capture actors, lights, and output assets by hand.
 
-> Screenshot placeholder — add a representative generated-icon grid here.
+![Transparent Texture2D icon generated from a static mesh](Docs/Media/generated-transparent-icon.gif)
 
 ## What it solves
 
@@ -17,7 +17,7 @@ Creating UI icons from meshes can become repetitive: select a mesh, set up a cam
 - Saving captured pixels as `Texture2D` assets, including transparent backgrounds.
 - Reuse of the preview scene, mesh component, and render targets while the panel is open; saved previews can use their cached pixels instead of requiring another capture.
 
-> Screenshot placeholder — add the main plugin panel and preview controls here.
+![Selecting static meshes and adding them to the icon-generation workflow](Docs/Media/select-static-meshes.gif)
 
 ## Material preview in a new project
 
@@ -84,9 +84,7 @@ Released under the [MIT License](LICENSE).
 
 ## Screenshots to add
 
-- Generated icon examples
 - Tools menu entry
-- Content Browser mesh selection
 - Main panel and queue
 - Output settings
 - Preview controls
