@@ -5,11 +5,23 @@ Saved/
 DerivedDataCache/
 Packaged/
 
+# Local Unreal validation host project
+/ItemIconGenerator/
+
 # IDE files
 .vs/
 .idea/
 .vscode/
 *.sln
+*.slnx
+*.suo
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.xcodeproj/
+*.xcworkspace/
+*.code-workspace
+.vsconfig
 *.pdb
 *.dll
 *.lib

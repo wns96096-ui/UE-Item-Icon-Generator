@@ -139,28 +139,10 @@ bool FItemIconPreviewRenderer::Capture(
 	}
 
 	const FBoxSphereBounds Bounds = MeshComponent->Bounds;
-	const FVector PivotLocation = MeshComponent->GetComponentLocation();
-	const FVector TargetLocation = PivotLocation + Settings.CameraTargetOffset;
-	const FVector BoundsMin = Bounds.Origin - Bounds.BoxExtent;
-	const FVector BoundsMax = Bounds.Origin + Bounds.BoxExtent;
-
-	float RadiusFromPivot = 0.0f;
-	for (int32 XIndex = 0; XIndex < 2; ++XIndex)
-	{
-		for (int32 YIndex = 0; YIndex < 2; ++YIndex)
-		{
-			for (int32 ZIndex = 0; ZIndex < 2; ++ZIndex)
-			{
-				const FVector Corner(
-					XIndex == 0 ? BoundsMin.X : BoundsMax.X,
-					YIndex == 0 ? BoundsMin.Y : BoundsMax.Y,
-					ZIndex == 0 ? BoundsMin.Z : BoundsMax.Z);
-				RadiusFromPivot = FMath::Max(RadiusFromPivot, FVector::Distance(PivotLocation, Corner));
-			}
-		}
-	}
-
-	const float Radius = FMath::Max(RadiusFromPivot, 10.0f);
+	// Frame the rendered geometry rather than the imported asset pivot. This keeps
+	// off-center meshes visually anchored while they are rotated in the preview.
+	const FVector TargetLocation = Bounds.Origin + Settings.CameraTargetOffset;
+	const float Radius = FMath::Max(Bounds.SphereRadius, 10.0f);
 	const float CameraDistance = Radius * FMath::Max(Settings.CameraDistanceMultiplier, 0.01f);
 	const FRotator CameraOrbitRotation(
 		FMath::Clamp(Settings.CameraPitch, -89.0f, 89.0f),

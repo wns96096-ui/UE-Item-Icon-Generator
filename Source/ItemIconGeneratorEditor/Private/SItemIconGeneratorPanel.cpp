@@ -10,6 +10,9 @@
 #include "ItemIconGeneratorLibrary.h"
 #include "ItemIconPreviewCache.h"
 #include "Styling/AppStyle.h"
+#if WITH_DEV_AUTOMATION_TESTS
+#include "Misc/AutomationTest.h"
+#endif
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Input/SButton.h"
 #include "Widgets/Input/SCheckBox.h"
@@ -145,6 +148,21 @@ namespace ItemIconGeneratorPanel
 		return FSlateColor::UseForeground();
 	}
 
+	FRotator RotateMeshInScreenSpace(
+		const FRotator& MeshRotation,
+		const float CameraPitch,
+		const float CameraYaw,
+		const FVector2D CursorDelta)
+	{
+		const FRotationMatrix CameraBasis(FRotator(CameraPitch, CameraYaw, 0.0f));
+		const FVector ScreenRight = CameraBasis.GetUnitAxis(EAxis::Y);
+		const FVector ScreenUp = CameraBasis.GetUnitAxis(EAxis::Z);
+		const FQuat YawDelta(ScreenUp, FMath::DegreesToRadians(CursorDelta.X * 0.45f));
+		const FQuat PitchDelta(ScreenRight, FMath::DegreesToRadians(CursorDelta.Y * 0.4f));
+		const FQuat DragDelta = (PitchDelta * YawDelta).GetNormalized();
+		return (DragDelta * MeshRotation.Quaternion()).GetNormalized().Rotator().GetNormalized();
+	}
+
 	class SQueueRow final : public SMultiColumnTableRow<FItemIconGeneratorQueueEntryPtr>
 	{
 	public:
@@ -208,6 +226,35 @@ namespace ItemIconGeneratorPanel
 		FItemIconGeneratorQueueEntryPtr Item;
 	};
 }
+
+#if WITH_DEV_AUTOMATION_TESTS
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FItemIconScreenSpaceRotationTest,
+	"ItemIconGenerator.Preview.ScreenSpaceRotation",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FItemIconScreenSpaceRotationTest::RunTest(const FString& Parameters)
+{
+	(void)Parameters;
+	const FRotator InitialRotation(15.0f, -30.0f, 5.0f);
+	const FRotator NoDragRotation = ItemIconGeneratorPanel::RotateMeshInScreenSpace(
+		InitialRotation, -45.0f, 45.0f, FVector2D::ZeroVector);
+	TestTrue(TEXT("Zero cursor movement preserves mesh orientation"),
+		NoDragRotation.Equals(InitialRotation, KINDA_SMALL_NUMBER));
+
+	const FRotator DraggedRotation = ItemIconGeneratorPanel::RotateMeshInScreenSpace(
+		InitialRotation, -45.0f, 45.0f, FVector2D(40.0f, -20.0f));
+	TestFalse(TEXT("Cursor movement changes mesh orientation"),
+		DraggedRotation.Equals(InitialRotation, KINDA_SMALL_NUMBER));
+	const bool bAnglesAreNormalized =
+		FMath::Abs(DraggedRotation.Pitch) <= 180.0f &&
+		FMath::Abs(DraggedRotation.Yaw) <= 180.0f &&
+		FMath::Abs(DraggedRotation.Roll) <= 180.0f;
+	TestTrue(TEXT("Result remains a normalized rotator"),
+		bAnglesAreNormalized && !DraggedRotation.ContainsNaN());
+	return true;
+}
+#endif
 
 void SItemIconGeneratorPanel::Construct(const FArguments& InArgs)
 {
@@ -405,7 +452,7 @@ void SItemIconGeneratorPanel::Construct(const FArguments& InArgs)
 								+ SOverlay::Slot().HAlign(HAlign_Left).VAlign(VAlign_Top).Padding(6.0f)
 								[
 									SNew(STextBlock)
-									.Text(LOCTEXT("PreviewControlsHint", "드래그: 메시 회전  ·  WASD: 위치  ·  휠: 줌"))
+									.Text(LOCTEXT("PreviewControlsHint", "드래그: 화면 기준 회전  ·  WASD: 위치  ·  휠: 줌"))
 									.ColorAndOpacity(FLinearColor(0.85f, 0.85f, 0.85f, 0.8f))
 								]
 							]
@@ -450,6 +497,53 @@ void SItemIconGeneratorPanel::Construct(const FArguments& InArgs)
 							+ SScrollBox::Slot()
 							[
 								SNew(SGridPanel).FillColumn(1, 1.0f)
+								+ SGridPanel::Slot(0, 0).VAlign(VAlign_Center).Padding(0.0f, 0.0f, 6.0f, 5.0f)
+								[
+									SNew(STextBlock).Text(LOCTEXT("MeshRotation", "메시 회전 P/Y/R"))
+								]
+								+ SGridPanel::Slot(1, 0).Padding(0.0f, 0.0f, 0.0f, 5.0f)
+								[
+									SNew(SHorizontalBox)
+									+ SHorizontalBox::Slot().FillWidth(1.0f).Padding(0.0f, 0.0f, 3.0f, 0.0f)
+									[
+										SNew(SNumericEntryBox<double>)
+										.ToolTipText(LOCTEXT("MeshPitchTip", "메시 Pitch (-180~180)"))
+										.MinValue(-180.0).MaxValue(180.0).MinSliderValue(-180.0).MaxSliderValue(180.0).Delta(1.0)
+										.IsEnabled_Lambda([this]() { return GetSelectedItem().IsValid() && !IsBatchRunning(); })
+										.Value_Lambda([this]() -> TOptional<double> { const auto Item = GetSelectedItem(); return Item.IsValid() ? TOptional<double>(GetEffectiveCaptureSettings(*Item).MeshRotation.Pitch) : TOptional<double>(); })
+										.OnValueChanged_Lambda([this](const double Value) { ModifySelectedCaptureSettings([Value](auto& Settings) { Settings.MeshRotation.Pitch = FRotator::NormalizeAxis(Value); }); })
+									]
+									+ SHorizontalBox::Slot().FillWidth(1.0f).Padding(0.0f, 0.0f, 3.0f, 0.0f)
+									[
+										SNew(SNumericEntryBox<double>)
+										.ToolTipText(LOCTEXT("MeshYawTip", "메시 Yaw (-180~180)"))
+										.MinValue(-180.0).MaxValue(180.0).MinSliderValue(-180.0).MaxSliderValue(180.0).Delta(1.0)
+										.IsEnabled_Lambda([this]() { return GetSelectedItem().IsValid() && !IsBatchRunning(); })
+										.Value_Lambda([this]() -> TOptional<double> { const auto Item = GetSelectedItem(); return Item.IsValid() ? TOptional<double>(GetEffectiveCaptureSettings(*Item).MeshRotation.Yaw) : TOptional<double>(); })
+										.OnValueChanged_Lambda([this](const double Value) { ModifySelectedCaptureSettings([Value](auto& Settings) { Settings.MeshRotation.Yaw = FRotator::NormalizeAxis(Value); }); })
+									]
+									+ SHorizontalBox::Slot().FillWidth(1.0f).Padding(0.0f, 0.0f, 3.0f, 0.0f)
+									[
+										SNew(SNumericEntryBox<double>)
+										.ToolTipText(LOCTEXT("MeshRollTip", "메시 Roll (-180~180)"))
+										.MinValue(-180.0).MaxValue(180.0).MinSliderValue(-180.0).MaxSliderValue(180.0).Delta(1.0)
+										.IsEnabled_Lambda([this]() { return GetSelectedItem().IsValid() && !IsBatchRunning(); })
+										.Value_Lambda([this]() -> TOptional<double> { const auto Item = GetSelectedItem(); return Item.IsValid() ? TOptional<double>(GetEffectiveCaptureSettings(*Item).MeshRotation.Roll) : TOptional<double>(); })
+										.OnValueChanged_Lambda([this](const double Value) { ModifySelectedCaptureSettings([Value](auto& Settings) { Settings.MeshRotation.Roll = FRotator::NormalizeAxis(Value); }); })
+									]
+									+ SHorizontalBox::Slot().AutoWidth()
+									[
+										SNew(SButton)
+										.Text(LOCTEXT("ResetMeshRotation", "초기화"))
+										.ToolTipText(LOCTEXT("ResetMeshRotationTip", "메시 회전을 0도로 초기화합니다."))
+										.IsEnabled_Lambda([this]() { return GetSelectedItem().IsValid() && !IsBatchRunning(); })
+										.OnClicked_Lambda([this]()
+										{
+											ModifySelectedCaptureSettings([](auto& Settings) { Settings.MeshRotation = FRotator::ZeroRotator; });
+											return FReply::Handled();
+										})
+									]
+								]
 								+ SGridPanel::Slot(0, 4).VAlign(VAlign_Center).Padding(0.0f, 0.0f, 6.0f, 5.0f)[SNew(STextBlock).Text(LOCTEXT("LightRotation", "키 조명 회전 P/Y/R"))]
 								+ SGridPanel::Slot(1, 4).Padding(0.0f, 0.0f, 0.0f, 5.0f)
 								[
@@ -1097,11 +1191,23 @@ void SItemIconGeneratorPanel::HandlePreviewDrag(const FVector2D CursorDelta)
 		return;
 	}
 
-	EnsureSelectedOverrideSettings();
-	ModifySelectedCaptureSettings([CursorDelta](FItemIconCaptureSettings& Settings)
+	const FItemIconGeneratorQueueEntryPtr Item = GetSelectedItem();
+	if (!Item.IsValid() || IsBatchRunning())
 	{
-		Settings.MeshRotation.Yaw = FRotator::NormalizeAxis(Settings.MeshRotation.Yaw + CursorDelta.X * 0.45f);
-		Settings.MeshRotation.Pitch = FRotator::NormalizeAxis(Settings.MeshRotation.Pitch + CursorDelta.Y * 0.4f);
+		return;
+	}
+
+	const FItemIconCaptureSettings CurrentSettings = GetEffectiveCaptureSettings(*Item);
+	const FRotator NewRotation = ItemIconGeneratorPanel::RotateMeshInScreenSpace(
+		CurrentSettings.MeshRotation,
+		CurrentSettings.CameraPitch,
+		CurrentSettings.CameraYaw,
+		CursorDelta);
+
+	EnsureSelectedOverrideSettings();
+	ModifySelectedCaptureSettings([NewRotation](FItemIconCaptureSettings& Settings)
+	{
+		Settings.MeshRotation = NewRotation;
 	});
 }
 
