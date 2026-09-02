@@ -2,7 +2,7 @@
 
 All notable changes to this project are documented in this file.
 
-## Unreleased
+## 0.5.0 — 2026-09-02
 
 - Changed preview dragging to rotate meshes in camera screen space.
 - Added direct Pitch/Yaw/Roll controls and a reset action for mesh rotation.

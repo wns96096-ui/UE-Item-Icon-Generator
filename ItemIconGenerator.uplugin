@@ -1,7 +1,7 @@
 {
 	"FileVersion": 3,
-	"Version": 5,
-	"VersionName": "0.4.1",
+	"Version": 6,
+	"VersionName": "0.5.0",
 	"FriendlyName": "Item Icon Generator",
 	"Description": "Editor tools for batch-generating Texture2D item icons from static meshes.",
 	"Category": "Editor",

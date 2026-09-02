@@ -36,7 +36,7 @@
 ### Release 패키지 사용
 
 1. Unreal Editor를 종료합니다.
-2. [v0.4.1 Release](https://github.com/wns96096-ui/UE-Item-Icon-Generator/releases/tag/v0.4.1)에서 UE 5.8용 ZIP을 내려받아 압축을 풉니다.
+2. [v0.5.0 Release](https://github.com/wns96096-ui/UE-Item-Icon-Generator/releases/tag/v0.5.0)에서 UE 5.8용 ZIP을 내려받아 압축을 풉니다.
 3. `ItemIconGenerator` 폴더를 `<프로젝트>/Plugins/` 아래에 복사합니다.
 4. 프로젝트를 열고 안내가 나오면 플러그인 또는 모듈 로드를 승인합니다.
 5. 상단 메뉴에서 **도구 > 아이템 아이콘 생성기**를 엽니다.
